@@ -744,14 +744,52 @@ ${ctx}
   );
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// MAIN DASHBOARD
+// MAIN DASHBOARD — polished portfolio layout
 // ═══════════════════════════════════════════════════════════════════════════════
+
+function MiniTrend() {
+  const pts = [42,48,45,52,50,58,54,61,59,66,64,69,72,70,75];
+  const coords = pts.map((v,i)=>`${(i/(pts.length-1))*100},${100-v}`).join(" ");
+  return <svg viewBox="0 0 100 100" className="mini-trend">{[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y}/>) }<polyline points={coords}/>{pts.map((v,i)=><circle key={i} cx={(i/(pts.length-1))*100} cy={100-v} r="2"/>)}</svg>;
+}
+
+function Donut({ counts }) {
+  const total = counts.reduce((s,c)=>s+c.value,0); let offset = 25;
+  return <div className="donut-wrap"><svg viewBox="0 0 42 42">{counts.map(c=>{const dash=(c.value/total)*100; const el=<circle key={c.label} cx="21" cy="21" r="15.915" fill="transparent" stroke={c.color} strokeWidth="6" strokeDasharray={`${dash} ${100-dash}`} strokeDashoffset={offset}/>; offset-=dash; return el;})}</svg><div>{counts.map(c=><p key={c.label}><span style={{background:c.color}}/>{c.label}: <b>{c.value}</b></p>)}</div></div>;
+}
+
+function RightRail({ setCopilotAccount }) {
+  const worst = [...accounts].sort((a,b)=>a.health.composite-b.health.composite)[0];
+  const aiCards = [["✦","Executive Summary","AI narrative of key risks"],["⚠","Churn Prevention Plan","At-risk account playbook"],["💰","AR Recovery Plan","Collections action plan"],["↑","Upsell Opportunity","Smart expansion ideas"],["📊","QBR Prep","Executive meeting prep"]];
+  const changes = [["#16a34a","Colorado Medicaid updated ePA requirements","2h ago"],["#f59e0b","Medicare LCD revision detected for EMG billing","5h ago"],["#0891b2","Prior auth turnaround delays increased 18%","1d ago"],["#be123c","BCBS denial pattern emerging for CPT 95813","1d ago"],["#d97706","Documentation mismatch spike in neurology workflows","2d ago"]];
+  return <aside className="right-rail">
+    <section className="rail-card ai-rail"><div className="rail-title">AI Copilot <span>Powered by Claude</span></div>{aiCards.map(([icon,title,sub])=><button key={title} className="ai-card" onClick={()=>setCopilotAccount(worst)}><span className="ai-icon">{icon}</span><span><strong>{title}</strong><small>{sub}</small></span></button>)}<button className="ask-ai" onClick={()=>setCopilotAccount(worst)}>Ask AI Copilot →</button></section>
+    <section className="rail-card"><div className="rail-title">Recent Operational Changes <button>View all</button></div>{changes.map(([color,text,time])=><div key={text} className="change-row"><span style={{background:color}}/><p>{text}<small>{time}</small></p></div>)}</section>
+    <section className="rail-card"><div className="rail-title">Benchmark Spotlight</div><div className="benchmark-grid"><div><small>HFMA Benchmark</small><strong>Avg Days to Collect &lt; 35 days</strong></div><div><small>Your Portfolio</small><strong className="bad">47 days<br/>Above benchmark</strong></div></div></section>
+    <section className="rail-card digest"><div className="rail-title">AI Weekly Executive Digest <button>View full</button></div><p>This week, reimbursement risk increased primarily due to Medicaid prior authorization changes and neurology documentation denials.</p><p>Recommended actions include workflow retraining, payer-rule validation, and executive QBR scheduling.</p><small>Generated May 24, 2025 at 9:30 AM</small></section>
+  </aside>;
+}
+
+function AccountCard({ a, setScoreAccount, setCopilotAccount, setInterventionStory }) {
+  const h=a.health;
+  return <article className={`account-card ${a.churnRisk==="Critical"?"critical":""}`}>
+    {a.interventionStory&&<button className="story-ribbon" onClick={()=>setInterventionStory(a.interventionStory)}>✓ Saved by Intervention — view case study</button>}
+    <div className="account-head"><div><h3>{a.name}</h3><p>{a.city}</p><div className="specialties">{a.specialties.map(s=><span key={s} style={{background:specialtyColors[s]+"18",color:specialtyColors[s]}}>{s}</span>)}</div></div><div className="score-stack"><Ring score={h.composite} size={70}/><strong>{a.churnRisk==="Critical"?"Critical":a.churnRisk==="High"?"High Risk":a.churnRisk==="Medium"?"At Risk":"Healthy"}</strong></div></div>
+    <div className="subscore-row">{SUB_SCORE_META.map(layer=>{const sc=h[layer.key].score;return <div key={layer.key} title={`${layer.label}: ${sc}/100`}><span>{layer.icon}</span><div><i style={{width:`${sc}%`,background:scoreColor(sc)}} /></div><b style={{color:scoreColor(sc)}}>{sc}</b></div>})}</div>
+    <div className="ar-panel"><ARBar ar={a.ar}/></div>
+    <div className="metric-grid"><div><small>Open Tickets</small><strong className={a.openTickets>3?"bad":"good"}>{a.openTickets} <TrendPill trend={a.trends.tickets}/></strong></div><div><small>Avg Resolve <em>vs internal</em></small><strong className={a.avgResolutionDays>5?"bad":a.avgResolutionDays>2?"warn":"good"}>{a.avgResolutionDays}d</strong></div><div><small>MRR</small><strong>${(a.mrr/1000).toFixed(1)}K</strong></div><div><small>Denial Rate</small><strong className={a.denialRatePct>12?"bad":a.denialRatePct>5?"warn":"good"}>{a.denialRatePct}%</strong></div><div><small>Studies/Mo</small><strong>{a.studiesLastMonth}</strong></div></div>
+    <div className="driver-strip">{h.drivers.slice(0,2).map(d=><span key={d.label}>{d.label}</span>)}{h.drivers.length===0&&<span className="healthy-driver">No major risk drivers</span>}</div>
+    <div className="card-actions"><button onClick={()=>setScoreAccount(a)}>ⓘ Explain Score</button><button onClick={()=>setCopilotAccount(a)}>✦ AI Brief</button></div>
+  </article>;
+}
+
 export default function DiagRevIQ() {
   const [copilotAccount, setCopilotAccount] = useState(null);
   const [scoreAccount, setScoreAccount] = useState(null);
   const [interventionStory, setInterventionStory] = useState(null);
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState("AR Overdue");
   const [sort, setSort] = useState("health");
 
   const totalARR  = accounts.reduce((s,a)=>s+a.arr,0);
@@ -761,200 +799,30 @@ export default function DiagRevIQ() {
   const totalAR   = accounts.reduce((s,a)=>s+arTotal(a.ar),0);
 
   const filterOpts=["All","Critical / High Risk","AR Overdue","Upsell Targets","Onboarding","Has Intervention"];
-  const filtered = accounts
-    .filter(a=>{
-      if(filter==="Critical / High Risk") return ["High","Critical"].includes(a.churnRisk);
-      if(filter==="AR Overdue") return (a.ar.d61_90+a.ar.d90plus)/arTotal(a.ar)>0.20;
-      if(filter==="Upsell Targets") return a.upsellPotential==="High";
-      if(filter==="Onboarding") return a.onboardingPct<100;
-      if(filter==="Has Intervention") return !!a.interventionStory;
-      return true;
-    })
-    .sort((a,b)=>{
-      if(sort==="health") return a.health.composite-b.health.composite;
-      if(sort==="arr") return b.arr-a.arr;
-      if(sort==="ar_aging") return (b.ar.d61_90+b.ar.d90plus)-(a.ar.d61_90+a.ar.d90plus);
-      if(sort==="tickets") return b.openTickets-a.openTickets;
-      if(sort==="risk"){const r={Critical:0,High:1,Medium:2,Low:3};return r[a.churnRisk]-r[b.churnRisk];}
-      return 0;
-    });
+  const filtered = accounts.filter(a=>{ if(filter==="Critical / High Risk") return ["High","Critical"].includes(a.churnRisk); if(filter==="AR Overdue") return (a.ar.d61_90+a.ar.d90plus)/arTotal(a.ar)>0.20; if(filter==="Upsell Targets") return a.upsellPotential==="High"; if(filter==="Onboarding") return a.onboardingPct<100; if(filter==="Has Intervention") return !!a.interventionStory; return true; }).sort((a,b)=>{ if(sort==="health") return a.health.composite-b.health.composite; if(sort==="arr") return b.arr-a.arr; if(sort==="ar_aging") return (b.ar.d61_90+b.ar.d90plus)-(a.ar.d61_90+a.ar.d90plus); if(sort==="tickets") return b.openTickets-a.openTickets; if(sort==="risk"){const r={Critical:0,High:1,Medium:2,Low:3};return r[a.churnRisk]-r[b.churnRisk];} return 0; });
 
-  return (
-    <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"'DM Sans','Segoe UI',sans-serif"}}>
-      {/* Nav */}
-      <div style={{background:"linear-gradient(135deg,#0f172a,#1a3456)",height:58,padding:"0 28px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 2px 20px rgba(0,0,0,0.35)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{background:"linear-gradient(135deg,#2563eb,#7c3aed)",width:32,height:32,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>⚕</div>
-          <span style={{color:"#fff",fontWeight:800,fontSize:16,letterSpacing:"-0.02em"}}>DiagRevIQ</span>
-          <span style={{color:"#475569",fontSize:12,paddingLeft:4}}>Operational Risk Intelligence</span>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <button onClick={()=>setInterventionStory(accounts.find(a=>a.interventionStory)?.interventionStory)} style={{background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.4)",color:"#6ee7b7",padding:"5px 14px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer"}}>✓ Intervention Story</button>
-          <span style={{color:"#475569",fontSize:11}}>{accounts.length} Accounts</span>
-        </div>
-      </div>
+  const kpis = [
+    {label:"Managed ARR", value:`$${(totalARR/1000).toFixed(0)}K`, sub:"Total Book", accent:"#2563eb", trend:"↑ 8.4% vs last month"},
+    {label:"Avg Risk Score", value:avgHealth, sub:"Portfolio Intelligence", accent:"#f97316", trend:"↓ 4 pts vs last month"},
+    {label:"ARR at Risk", value:`$${(atRiskARR/1000).toFixed(0)}K`, sub:"High + Critical", accent:"#dc2626", trend:"↑ 12% vs last month"},
+    {label:"Total AR", value:`$${(totalAR/1000000).toFixed(2)}M`, sub:"Portfolio Receivables", accent:"#0891b2", trend:"↑ 6.1% vs last month"},
+    {label:"AR 90d+", value:`$${(totalAR90/1000).toFixed(0)}K`, sub:"At-Risk Collections", accent:"#be123c", trend:"↑ 18% vs last month"},
+  ];
+  const riskCounts = [{label:"Critical", value:accounts.filter(a=>a.churnRisk==="Critical").length, color:"#be123c"},{label:"High", value:accounts.filter(a=>a.churnRisk==="High").length, color:"#ef4444"},{label:"Watch", value:accounts.filter(a=>a.churnRisk==="Medium").length, color:"#f59e0b"},{label:"Healthy", value:accounts.filter(a=>a.churnRisk==="Low").length, color:"#22c55e"}];
 
-      <div style={{padding:"24px 28px",maxWidth:1280,margin:"0 auto"}}>
-        {/* KPIs */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:22}}>
-          {[
-            {label:"Managed ARR",     value:`$${(totalARR/1000).toFixed(0)}K`, sub:"Total Book",           accent:"#2563eb"},
-            {label:"Avg Risk Score",  value:avgHealth,                          sub:"Portfolio Intelligence",accent:avgHealth>=70?"#16a34a":"#d97706"},
-            {label:"ARR at Risk",     value:`$${(atRiskARR/1000).toFixed(0)}K`,sub:"High + Critical",       accent:"#dc2626"},
-            {label:"Total AR",        value:`$${(totalAR/1000).toFixed(0)}K`,  sub:"Portfolio Receivables", accent:"#0891b2"},
-            {label:"AR 90d+",         value:`$${(totalAR90/1000).toFixed(0)}K`,sub:"At-Risk Collections",   accent:"#be123c"},
-          ].map(k=>(
-            <div key={k.label} style={{background:"#fff",borderRadius:14,padding:"14px 18px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",borderTop:`3px solid ${k.accent}`}}>
-              <div style={{fontSize:10,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4}}>{k.label}</div>
-              <div style={{fontSize:22,fontWeight:800,color:k.accent,lineHeight:1}}>{k.value}</div>
-              <div style={{fontSize:11,color:"#cbd5e1",marginTop:3}}>{k.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Legends */}
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {Object.entries(specialtyColors).map(([s,c])=><div key={s} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#475569"}}><div style={{width:9,height:9,borderRadius:2,background:c}}/>{s}</div>)}
-          </div>
-          <div style={{display:"flex",gap:10}}>
-            {AR_BUCKETS.map(b=><div key={b.key} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#475569"}}><div style={{width:9,height:9,borderRadius:2,background:b.color}}/>{b.label}</div>)}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {filterOpts.map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:"1px solid",borderColor:filter===f?"#2563eb":"#e2e8f0",background:filter===f?"#2563eb":"#fff",color:filter===f?"#fff":"#64748b",fontSize:11,fontWeight:600,cursor:"pointer"}}>{f}</button>)}
-          </div>
-          <select value={sort} onChange={e=>setSort(e.target.value)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:11,color:"#475569",background:"#fff",cursor:"pointer"}}>
-            <option value="health">Sort: Risk Score ↑</option>
-            <option value="risk">Sort: Churn Risk ↑</option>
-            <option value="arr">Sort: ARR ↓</option>
-            <option value="ar_aging">Sort: AR Overdue ↓</option>
-            <option value="tickets">Sort: Open Tickets ↓</option>
-          </select>
-        </div>
-
-        {/* Cards */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(370px,1fr))",gap:14}}>
-          {filtered.map(a=>{
-            const h=a.health, risk=riskConfig[a.churnRisk];
-            return (
-              <div key={a.id} style={{background:"#fff",borderRadius:16,padding:"18px 20px",boxShadow:"0 1px 6px rgba(0,0,0,0.07)",border:a.churnRisk==="Critical"?"2px solid #fca5a5":a.interventionStory?"2px solid #6ee7b7":"1px solid #e2e8f0",transition:"box-shadow 0.2s,transform 0.2s"}}
-                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.13)";e.currentTarget.style.transform="translateY(-2px)";}}
-                onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 6px rgba(0,0,0,0.07)";e.currentTarget.style.transform="translateY(0)";}}>
-
-                {a.interventionStory&&<div style={{background:"#f0fdf4",borderRadius:8,padding:"5px 10px",marginBottom:10,fontSize:10,color:"#16a34a",fontWeight:600,border:"1px solid #bbf7d0"}}>✓ Saved by Intervention — click to view case study</div>}
-
-                {/* Header */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div style={{flex:1,paddingRight:8}}>
-                    <div style={{fontWeight:700,fontSize:14,color:"#0f172a",lineHeight:1.3,marginBottom:2}}>{a.name}</div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>{a.city}</div>
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {a.specialties.map(s=><span key={s} style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:10,background:specialtyColors[s]+"18",color:specialtyColors[s]}}>{s}</span>)}
-                    </div>
-                  </div>
-                  <div style={{textAlign:"center"}}>
-                    <Ring score={h.composite}/>
-                    <button onClick={()=>setScoreAccount(a)} style={{fontSize:8,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>explain</button>
-                  </div>
-                </div>
-
-                {/* Sub-score mini bar */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:3,marginBottom:10}}>
-                  {SUB_SCORE_META.map(layer=>{
-                    const sc=h[layer.key].score;
-                    return (
-                      <div key={layer.key} title={`${layer.label}: ${sc}/100`} style={{textAlign:"center"}}>
-                        <div style={{fontSize:8,color:"#94a3b8",marginBottom:2}}>{layer.icon}</div>
-                        <div style={{height:4,background:"#f1f5f9",borderRadius:4,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${sc}%`,background:scoreColor(sc),borderRadius:4}}/>
-                        </div>
-                        <div style={{fontSize:9,fontWeight:700,color:scoreColor(sc),marginTop:2}}>{sc}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* AR aging */}
-                <div style={{background:"#f8fafc",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #e2e8f0"}}>
-                  <ARBar ar={a.ar} compact={false}/>
-                </div>
-
-                {/* Tickets + resolution */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                  <div style={{background:a.openTickets===0?"#f0fdf4":a.openTickets<=3?"#fffbeb":"#fef2f2",borderRadius:8,padding:"6px 10px"}}>
-                    <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase"}}>Open Tickets</div>
-                    <div style={{fontSize:16,fontWeight:800,color:a.openTickets===0?"#16a34a":a.openTickets<=3?"#d97706":"#dc2626"}}>{a.openTickets} <TrendPill trend={a.trends.tickets}/></div>
-                  </div>
-                  <div style={{background:a.avgResolutionDays<=2?"#f0fdf4":a.avgResolutionDays<=5?"#fffbeb":"#fef2f2",borderRadius:8,padding:"6px 10px"}}>
-                    <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase"}}>Avg Resolve <BenchmarkBadge metric="avgResolutionDays" value={a.avgResolutionDays}/></div>
-                    <div style={{fontSize:16,fontWeight:800,color:a.avgResolutionDays<=2?"#16a34a":a.avgResolutionDays<=5?"#d97706":"#dc2626"}}>{a.avgResolutionDays}d</div>
-                  </div>
-                </div>
-
-                {/* Key metrics row */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-                  {[
-                    {label:"MRR",value:`$${(a.mrr/1000).toFixed(1)}K`,trend:null},
-                    {label:"Denial Rate",value:`${a.denialRatePct}%`,trend:a.trends.denial,alert:a.denialRatePct>8},
-                    {label:"Studies/Mo",value:a.studiesLastMonth,trend:a.trends.studies},
-                  ].map(m=>(
-                    <div key={m.label} style={{background:m.alert?"#fef2f2":"#f8fafc",borderRadius:8,padding:"6px 10px"}}>
-                      <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase"}}>{m.label}{m.bench&&<BenchmarkBadge metric={m.bench} value={m.benchVal}/>}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:m.alert?"#dc2626":"#0f172a"}}>{m.value}{m.trend&&<span style={{marginLeft:4}}><TrendPill trend={m.trend}/></span>}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Risk drivers preview */}
-                {h.drivers.length>0&&(
-                  <div style={{background:"#fef2f2",borderRadius:8,padding:"7px 10px",marginBottom:10,border:"1px solid #fecaca"}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#dc2626",marginBottom:4}}>⚠ Top Risk Drivers</div>
-                    {h.drivers.slice(0,2).map((d,i)=>(
-                      <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#475569",marginBottom:2}}>
-                        <span>{d.label}</span><span style={{fontWeight:700,color:"#dc2626"}}>{d.impact}pts</span>
-                      </div>
-                    ))}
-                    {h.drivers.length>2&&<div style={{fontSize:10,color:"#94a3b8"}}>+{h.drivers.length-2} more risk factors</div>}
-                  </div>
-                )}
-
-                {/* Risk + onboarding */}
-                <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
-                  <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:20,background:risk.bg,color:risk.color}}>{risk.label}</span>
-                  <div style={{flex:1,height:5,background:"#e2e8f0",borderRadius:10,overflow:"hidden"}}>
-                    <div style={{height:"100%",borderRadius:10,width:`${a.onboardingPct}%`,background:a.onboardingPct===100?"#22c55e":a.onboardingPct>60?"#f59e0b":"#ef4444"}}/>
-                  </div>
-                  <span style={{fontSize:10,color:"#94a3b8",whiteSpace:"nowrap"}}>{a.onboardingPct}%</span>
-                </div>
-
-                {/* Flags */}
-                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-                  {a.flags.map(f=><span key={f} style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:flagConfig[f]?.bg,color:flagConfig[f]?.color}}>{flagConfig[f]?.label}</span>)}
-                </div>
-
-                {/* Note */}
-                <div style={{fontSize:11,color:"#64748b",lineHeight:1.55,background:"#f8fafc",borderRadius:8,padding:"7px 10px",marginBottom:12,borderLeft:"3px solid #e2e8f0"}}>
-                  {a.notes.length>100?a.notes.slice(0,100)+"…":a.notes}
-                </div>
-
-                {/* Footer */}
-                <div style={{display:"flex",gap:8}}>
-                  {a.interventionStory&&<button onClick={()=>setInterventionStory(a.interventionStory)} style={{flex:1,background:"#f0fdf4",color:"#16a34a",border:"1px solid #bbf7d0",borderRadius:10,padding:"7px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✓ Case Study</button>}
-                  <button onClick={()=>setCopilotAccount(a)} style={{flex:2,background:"linear-gradient(135deg,#1e40af,#2563eb)",color:"#fff",border:"none",borderRadius:10,padding:"7px 14px",fontSize:11,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(37,99,235,0.35)"}}>✦ AI Copilot</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {scoreAccount    && <ScoreExplainer account={scoreAccount} onClose={()=>setScoreAccount(null)}/>}
-      {copilotAccount  && <CopilotModal account={copilotAccount} onClose={()=>setCopilotAccount(null)}/>}
-      {interventionStory && <InterventionModal story={interventionStory} onClose={()=>setInterventionStory(null)}/>}
-    </div>
-  );
+  return <div className="app-shell">
+    <nav className="sidebar"><div className="brand"><div>⚕</div><span>DiagRevIQ<small>Operational Risk Intelligence</small></span></div><button className="nav-active">⌂ Overview</button><h4>Intelligence</h4><button>👥 Accounts</button><button>🎯 Risk Radar</button><button>💰 AR Intelligence</button><button>✦ AI Copilot</button><h4>Analytics</h4><button>⌁ Trends</button><button>▣ Benchmarks</button><button>▤ Reports</button><h4>Configuration</h4><button>⛓ Data Lineage</button><button>◉ Score Model</button><button>☷ Cheat Sheet</button><div className="status-card"><strong>✓ Platform Status</strong><span>All systems operational<br/>Data synced 5 min ago</span></div></nav>
+    <main className="main-area"><header className="topbar"><div className="search">⌕ Search accounts, facilities, or metrics...</div><div className="top-actions"><button onClick={()=>setInterventionStory(accounts.find(a=>a.interventionStory)?.interventionStory)}>↗ Intervention Story</button><span>Last updated: Today, 9:41 AM ↻</span></div></header>
+      <div className="content-grid"><section className="dashboard-core"><div className="title-row"><div><h1>Executive Overview</h1><p>Real-time operational intelligence across your customer base</p></div><div className="filters-mini"><button>Last 30 Days ▾</button><button>Filters</button></div></div>
+        <div className="kpi-row">{kpis.map(k=><div className="kpi-card" key={k.label} style={{borderTopColor:k.accent}}><small>{k.label}</small><strong style={{color:k.accent}}>{k.value}</strong><span>{k.sub}</span><em className={k.trend.includes("↑")&&["ARR at Risk","AR 90d+"].includes(k.label)?"bad":"good"}>{k.trend}</em></div>)}</div>
+        <div className="portfolio-head"><h2>Account Portfolio</h2><select value={sort} onChange={e=>setSort(e.target.value)}><option value="health">Sort by: Risk Score ↓</option><option value="risk">Sort by: Churn Risk</option><option value="arr">Sort by: ARR</option><option value="ar_aging">Sort by: AR Overdue</option><option value="tickets">Sort by: Open Tickets</option></select></div>
+        <div className="filter-row">{filterOpts.map(f=><button key={f} onClick={()=>setFilter(f)} className={filter===f?"active":""}>{f} {f==="All"?`(${accounts.length})`:""}</button>)}</div>
+        <div className="cards-grid">{filtered.slice(0,6).map(a=><AccountCard key={a.id} a={a} setScoreAccount={setScoreAccount} setCopilotAccount={setCopilotAccount} setInterventionStory={setInterventionStory}/>)}</div>
+        <div className="insight-grid"><section className="insight-card"><h3>Risk Distribution</h3><Donut counts={riskCounts}/></section><section className="insight-card"><h3>Portfolio Trend <span>↓ 4 pts vs last 30 days</span></h3><MiniTrend/></section><section className="insight-card"><h3>Top Risk Drivers</h3>{["High AR 90d Balance","Elevated Denial Rate","Low Executive Engagement","Oldest Open Tickets","Low Feature Adoption"].map((d,i)=><div className="bar-row" key={d}><span>{d}</span><i style={{width:`${95-i*13}%`,background:i<2?"#dc2626":i<3?"#f59e0b":"#22c55e"}}/></div>)}</section></div>
+        <footer className="data-note">ⓘ Every metric is traceable to a source table. Click “Explain Score” on any account card to view formula, data lineage, and calculation details. <span>Data is synthetic and for portfolio demonstration purposes only.</span></footer>
+      </section><RightRail setCopilotAccount={setCopilotAccount}/></div></main>
+    {copilotAccount&&<CopilotModal account={copilotAccount} onClose={()=>setCopilotAccount(null)}/>}
+    {scoreAccount&&<ScoreExplainer account={scoreAccount} onClose={()=>setScoreAccount(null)}/>}
+    {interventionStory&&<InterventionModal story={interventionStory} onClose={()=>setInterventionStory(null)}/>}
+  </div>;
 }
