@@ -53,6 +53,6 @@ All signals trace to conceptual database tables:
 
 ## About
 
-Built by [Your Name] as a portfolio project targeting AI-enabled Customer Success Manager roles in healthcare SaaS.
+Built by Suzy Thompson as a portfolio project targeting AI-enabled Customer Success Manager roles in healthcare SaaS.
 
-Connect: [Your LinkedIn URL]
+Connect: [www.linkedin.com/in/suzy-t-36223926a]
